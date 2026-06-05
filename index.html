@@ -1,0 +1,981 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GanbareGacha - 일본어 습관 메이커</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&family=Noto+Sans+KR:wght@300;400;700&display=swap');
+        
+        body {
+            font-family: 'Outfit', 'Noto Sans KR', sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
+            min-height: 100vh;
+        }
+
+        .glass-panel {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .tab-active {
+            color: #6366f1;
+            border-top: 3px solid #6366f1;
+        }
+
+        /* 가챠 드로우 애니메이션 */
+        @keyframes roll-gacha {
+            0% { transform: scale(1) rotate(0deg); filter: hue-rotate(0deg); }
+            20% { transform: scale(1.1) rotate(-10deg); }
+            40% { transform: scale(0.95) rotate(15deg); }
+            60% { transform: scale(1.15) rotate(-20deg); filter: hue-rotate(180deg); }
+            80% { transform: scale(0.9) rotate(10deg); }
+            100% { transform: scale(1) rotate(0deg); filter: hue-rotate(360deg); }
+        }
+
+        .gacha-shake {
+            animation: roll-gacha 1.5s ease-in-out infinite;
+        }
+
+        /* 반짝임 애니메이션 */
+        @keyframes shine {
+            0% { background-position: -200% %; }
+            100% { background-position: 200% %; }
+        }
+        
+        .rarity-ssr {
+            background: linear-gradient(110deg, #ffe066 30%, #fff 40%, #ffe066 50%, #f59e0b 80%);
+            background-size: 200% 100%;
+            animation: shine 3s linear infinite;
+            border: 2px solid #fbbf24;
+            box-shadow: 0 0 15px rgba(251, 191, 36, 0.6);
+        }
+
+        .rarity-sr {
+            background: linear-gradient(110deg, #c084fc 30%, #fff 40%, #c084fc 50%, #818cf8 80%);
+            background-size: 200% 100%;
+            animation: shine 3.5s linear infinite;
+            border: 2px solid #a855f7;
+            box-shadow: 0 0 10px rgba(168, 85, 247, 0.4);
+        }
+    </style>
+</head>
+<body class="flex items-center justify-center p-0 sm:p-4 text-slate-200 overflow-x-hidden">
+
+    <!-- 모바일 프레임 컨테이너 -->
+    <div class="w-full max-w-[480px] h-[100vh] sm:h-[880px] sm:rounded-3xl glass-panel shadow-2xl flex flex-col relative overflow-hidden">
+        
+        <!-- 상단 헤더 -->
+        <header class="p-4 flex justify-between items-center border-b border-white/5 shrink-0">
+            <div class="flex items-center gap-2">
+                <div class="w-8 h-8 rounded-xl bg-indigo-600 flex items-center justify-center text-white font-bold">が</div>
+                <h1 class="text-lg font-bold tracking-tight bg-gradient-to-r from-indigo-400 to-pink-400 bg-clip-text text-transparent">GanbareGacha</h1>
+            </div>
+            
+            <!-- 코인 및 정보 표시 -->
+            <div class="flex items-center gap-3">
+                <div class="flex items-center gap-1.5 bg-slate-800/80 px-3 py-1 rounded-full border border-white/5">
+                    <span class="text-amber-400 text-sm">🪙</span>
+                    <span id="header-coins" class="text-sm font-semibold">0</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- 메인 콘텐츠 영역 (스크롤 가능) -->
+        <main class="flex-1 overflow-y-auto p-4 pb-24" id="main-content">
+            
+            <!-- 1. HOME TAB -->
+            <div id="tab-home" class="tab-pane space-y-6">
+                <!-- 캐릭터 & 말풍선 대사 -->
+                <div class="relative flex flex-col items-center py-4">
+                    <!-- 말풍선 -->
+                    <div class="relative glass-panel bg-indigo-950/40 text-slate-200 px-4 py-3 rounded-2xl max-w-[85%] text-sm mb-4 border border-indigo-500/20 shadow-md">
+                        <p id="character-dialogue" class="leading-relaxed text-center font-medium">로딩 중...</p>
+                        <!-- 말풍선 꼬리 -->
+                        <div class="absolute bottom-[-8px] left-1/2 -translate-x-1/2 w-4 h-4 bg-indigo-950/40 border-r border-b border-indigo-500/20 rotate-45"></div>
+                    </div>
+
+                    <!-- 캐릭터 이미지 -->
+                    <div class="relative w-44 h-44 flex items-center justify-center rounded-full bg-gradient-to-tr from-indigo-500/10 to-pink-500/10 p-2 border border-white/5">
+                        <img id="home-character-img" src="https://images.unsplash.com/photo-1578632767115-351597cf2477?w=400&q=80" alt="Character" class="w-full h-full object-cover rounded-full shadow-lg transition-transform duration-300 hover:scale-105">
+                        <span id="badge-rarity" class="absolute bottom-1 right-1 bg-indigo-600 text-white text-xs px-2 py-0.5 rounded-full font-bold shadow-md">SSR</span>
+                    </div>
+                    <p id="home-character-name" class="mt-2 text-xs text-indigo-300 font-semibold tracking-wider">나를 깨우는 메이트</p>
+                </div>
+
+                <!-- 출석 현황 & 천장 게이지 -->
+                <div class="grid grid-cols-2 gap-3">
+                    <!-- 출석 현황 -->
+                    <div class="p-4 rounded-2xl bg-slate-800/40 border border-white/5 flex flex-col justify-between">
+                        <div class="text-xs text-slate-400 font-medium">연속 출석</div>
+                        <div class="flex items-baseline gap-1 mt-2">
+                            <span class="text-3xl">🔥</span>
+                            <span id="streak-count" class="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-red-500">0</span>
+                            <span class="text-xs text-slate-400 font-bold">일 연속</span>
+                        </div>
+                    </div>
+
+                    <!-- 천장 게이지 -->
+                    <div class="p-4 rounded-2xl bg-slate-800/40 border border-white/5 flex flex-col justify-between">
+                        <div class="flex justify-between items-center">
+                            <span class="text-xs text-slate-400 font-medium">SSR 천장</span>
+                            <span id="pity-text" class="text-xs text-indigo-400 font-bold">0/30</span>
+                        </div>
+                        <div class="w-full bg-slate-700/50 h-2 rounded-full mt-3 overflow-hidden">
+                            <div id="pity-bar" class="bg-gradient-to-r from-indigo-500 to-pink-500 h-full rounded-full transition-all duration-500" style="width: 0%"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 오늘의 단어 인증 미션 -->
+                <div class="p-5 rounded-2xl bg-indigo-950/20 border border-indigo-500/20 space-y-4">
+                    <div class="flex justify-between items-center">
+                        <span class="text-xs text-indigo-400 font-bold uppercase tracking-wider">Today's Mission Word</span>
+                        <span class="text-xs bg-indigo-500/20 text-indigo-300 px-2 py-0.5 rounded-full font-bold">손글씨 인증 필수</span>
+                    </div>
+                    <div class="text-center py-2">
+                        <h2 id="mission-word-jp" class="text-3xl font-extrabold text-white tracking-wide">勉強 (べんきょう)</h2>
+                        <p id="mission-word-kr" class="text-sm text-slate-400 mt-1">공부</p>
+                    </div>
+                    
+                    <!-- 인증 버튼 또는 완료 표시 -->
+                    <div id="attendance-action-area">
+                        <button onclick="openUploadModal()" class="w-full bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white font-bold py-3 px-4 rounded-xl shadow-lg shadow-indigo-500/20 flex items-center justify-center gap-2 transition-transform active:scale-98">
+                            <i data-lucide="camera" class="w-5 h-5"></i>
+                            오늘의 공부 인증하고 🪙 100 획득
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 복구하기 배너 (연속 출석이 깨진 날 표시) -->
+                <div id="restore-banner" class="hidden p-4 rounded-2xl bg-amber-950/20 border border-amber-500/20 flex justify-between items-center">
+                    <div>
+                        <h4 class="text-sm font-bold text-amber-400">연속 출석 기록이 깨졌습니다!</h4>
+                        <p class="text-xs text-slate-400 mt-0.5">500 코인으로 어제의 기록을 복구하세요.</p>
+                    </div>
+                    <button onclick="restoreStreak()" class="bg-amber-500 hover:bg-amber-600 active:scale-95 text-slate-950 font-bold text-xs py-2 px-3 rounded-lg flex items-center gap-1 transition-all">
+                        🪙 500 복구
+                    </button>
+                </div>
+            </div>
+
+            <!-- 2. GACHA TAB -->
+            <div id="tab-gacha" class="tab-pane hidden space-y-6">
+                <div class="text-center py-6">
+                    <h2 class="text-xl font-bold text-white">가챠 센터</h2>
+                    <p class="text-xs text-slate-400 mt-1">매일 성실히 공부하여 얻은 코인으로 컬렉션을 완성해보세요!</p>
+                </div>
+
+                <!-- 뽑기 머신 그래픽 효과 -->
+                <div class="relative flex flex-col items-center py-8">
+                    <div id="gacha-machine-container" class="relative w-48 h-48 bg-slate-800/80 rounded-2xl border-2 border-indigo-500/30 flex items-center justify-center shadow-xl">
+                        <!-- 뽑기 머신 모습 -->
+                        <div class="text-7xl">🔮</div>
+                        <!-- 이펙트링 -->
+                        <div class="absolute inset-0 rounded-2xl border border-pink-500/20 animate-pulse"></div>
+                    </div>
+                    
+                    <div class="mt-6 flex flex-col items-center space-y-2">
+                        <button onclick="drawGacha()" id="btn-draw" class="bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 hover:from-indigo-600 hover:to-pink-600 text-white font-bold py-3.5 px-8 rounded-2xl shadow-xl shadow-purple-500/20 flex items-center gap-2 text-base transition-transform active:scale-95">
+                            <span class="text-lg">🔮</span> 1회 뽑기 (🪙 300)
+                        </button>
+                        <span class="text-[11px] text-slate-500">30회 이내 SSR 확정 (현재 게이지: <span id="gacha-pity-text" class="text-indigo-400 font-bold">0</span>/30)</span>
+                    </div>
+                </div>
+
+                <!-- 확률 안내 -->
+                <div class="p-4 rounded-xl bg-slate-800/30 border border-white/5">
+                    <h4 class="text-xs font-semibold text-slate-400 mb-2">획득 확률 정보</h4>
+                    <div class="grid grid-cols-4 gap-2 text-center text-xs">
+                        <div class="p-2 rounded bg-slate-800/50"><div class="text-[10px] text-slate-400">N</div><div class="font-bold text-slate-300">50%</div></div>
+                        <div class="p-2 rounded bg-slate-800/50"><div class="text-[10px] text-blue-400">R</div><div class="font-bold text-blue-300">35%</div></div>
+                        <div class="p-2 rounded bg-slate-800/50"><div class="text-[10px] text-purple-400">SR</div><div class="font-bold text-purple-300">12%</div></div>
+                        <div class="p-2 rounded bg-slate-800/50"><div class="text-[10px] text-amber-400">SSR</div><div class="font-bold text-amber-300">3%</div></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 3. COLLECTION TAB -->
+            <div id="tab-collection" class="tab-pane hidden space-y-4">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <h2 class="text-lg font-bold text-white">카드 도감</h2>
+                        <p class="text-xs text-slate-400">수집한 캐릭터 카드를 확인하세요.</p>
+                    </div>
+                    <div class="text-right">
+                        <span id="collection-rate" class="text-lg font-extrabold text-indigo-400">0%</span>
+                        <div class="text-[10px] text-slate-400">수집률 (<span id="collection-count">0</span>/12)</div>
+                    </div>
+                </div>
+
+                <!-- 정렬/필터 탭 -->
+                <div class="flex gap-1.5 p-1 rounded-xl bg-slate-800/50 border border-white/5 text-xs">
+                    <button onclick="filterCollection('all')" id="filter-all" class="flex-1 py-1.5 rounded-lg text-center font-semibold bg-indigo-600 text-white">전체</button>
+                    <button onclick="filterCollection('SSR')" id="filter-ssr" class="flex-1 py-1.5 rounded-lg text-center font-semibold text-slate-400">SSR</button>
+                    <button onclick="filterCollection('SR')" id="filter-sr" class="flex-1 py-1.5 rounded-lg text-center font-semibold text-slate-400">SR</button>
+                    <button onclick="filterCollection('R')" id="filter-r" class="flex-1 py-1.5 rounded-lg text-center font-semibold text-slate-400">R</button>
+                    <button onclick="filterCollection('N')" id="filter-n" class="flex-1 py-1.5 rounded-lg text-center font-semibold text-slate-400">N</button>
+                </div>
+
+                <!-- 카드 그리드 리스트 -->
+                <div id="collection-grid" class="grid grid-cols-3 gap-2">
+                    <!-- JS로 동적 생성 -->
+                </div>
+            </div>
+
+            <!-- 4. CALENDAR TAB -->
+            <div id="tab-calendar" class="tab-pane hidden space-y-4">
+                <div>
+                    <h2 class="text-lg font-bold text-white">공부 달력</h2>
+                    <p class="text-xs text-slate-400">초록색 불(🟢)이 켜진 날은 공부를 완료한 날입니다.</p>
+                </div>
+
+                <!-- 달력 컨트롤러 -->
+                <div class="flex justify-between items-center p-3 bg-slate-800/40 rounded-xl border border-white/5">
+                    <button onclick="prevMonth()" class="p-1 hover:bg-slate-700 rounded transition-all"><i data-lucide="chevron-left" class="w-5 h-5 text-slate-400"></i></button>
+                    <span id="calendar-title" class="font-bold text-sm text-white">2026년 6월</span>
+                    <button onclick="nextMonth()" class="p-1 hover:bg-slate-700 rounded transition-all"><i data-lucide="chevron-right" class="w-5 h-5 text-slate-400"></i></button>
+                </div>
+
+                <!-- 요일 헤더 -->
+                <div class="grid grid-cols-7 gap-1 text-center text-xs font-semibold text-slate-400">
+                    <div>일</div><div>월</div><div>화</div><div>수</div><div>목</div><div>금</div><div>토</div>
+                </div>
+
+                <!-- 날짜 그리드 -->
+                <div id="calendar-days" class="grid grid-cols-7 gap-1.5">
+                    <!-- JS로 동적 생성 -->
+                </div>
+
+                <!-- 캘린더 요약 통계 -->
+                <div class="p-4 rounded-xl bg-slate-800/30 border border-white/5 space-y-2">
+                    <div class="flex justify-between text-xs">
+                        <span class="text-slate-400">이번 달 완료일</span>
+                        <span id="stat-completed" class="font-bold text-emerald-400">0일</span>
+                    </div>
+                    <div class="flex justify-between text-xs">
+                        <span class="text-slate-400">가장 긴 출석 스트릭</span>
+                        <span id="stat-best-streak" class="font-bold text-orange-400">0일</span>
+                    </div>
+                </div>
+            </div>
+
+        </main>
+
+        <!-- 하단 네비게이션 바 -->
+        <nav class="absolute bottom-0 left-0 right-0 h-16 glass-panel border-t border-white/5 flex items-center justify-around z-20 shrink-0">
+            <button onclick="switchTab('home')" id="nav-home" class="flex flex-col items-center justify-center flex-1 h-full text-indigo-500 font-semibold">
+                <i data-lucide="home" class="w-5 h-5"></i>
+                <span class="text-[10px] mt-1">홈</span>
+            </button>
+            <button onclick="switchTab('gacha')" id="nav-gacha" class="flex flex-col items-center justify-center flex-1 h-full text-slate-400 font-semibold">
+                <i data-lucide="sparkles" class="w-5 h-5"></i>
+                <span class="text-[10px] mt-1">뽑기</span>
+            </button>
+            <button onclick="switchTab('collection')" id="nav-collection" class="flex flex-col items-center justify-center flex-1 h-full text-slate-400 font-semibold">
+                <i data-lucide="book-open" class="w-5 h-5"></i>
+                <span class="text-[10px] mt-1">도감</span>
+            </button>
+            <button onclick="switchTab('calendar')" id="nav-calendar" class="flex flex-col items-center justify-center flex-1 h-full text-slate-400 font-semibold">
+                <i data-lucide="calendar" class="w-5 h-5"></i>
+                <span class="text-[10px] mt-1">달력</span>
+            </button>
+        </nav>
+
+        <!-- [모달] 1. 공부 인증 업로드 -->
+        <div id="modal-upload" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm hidden z-50 flex items-center justify-center p-4">
+            <div class="glass-panel w-full max-w-[380px] rounded-2xl p-5 border border-indigo-500/20 space-y-4">
+                <div class="flex justify-between items-center">
+                    <h3 class="text-base font-bold text-white">공부 인증 업로드</h3>
+                    <button onclick="closeUploadModal()" class="text-slate-400 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button>
+                </div>
+                
+                <div class="space-y-2 text-xs">
+                    <p class="text-slate-300 font-medium">📷 미션 단어 손글씨 가이드:</p>
+                    <div class="p-2.5 bg-indigo-950/30 rounded-lg border border-indigo-500/10 text-center">
+                        <span class="text-lg font-bold text-indigo-300" id="modal-mission-word">勉強 (べんきょう)</span>
+                    </div>
+                    <p class="text-[11px] text-slate-400">메모지나 문제집 위에 위 단어를 손글씨로 적은 후 사진과 함께 촬영하여 업로드해주세요.</p>
+                </div>
+
+                <!-- 파일 선택기 -->
+                <div class="border-2 border-dashed border-slate-700 rounded-xl p-6 text-center hover:border-indigo-500 transition-colors relative cursor-pointer">
+                    <input type="file" id="photo-input" accept="image/*" class="absolute inset-0 opacity-0 cursor-pointer" onchange="handlePhotoSelect(event)">
+                    <div id="upload-preview-container" class="space-y-2 flex flex-col items-center justify-center">
+                        <i data-lucide="upload" class="w-8 h-8 text-slate-400"></i>
+                        <span class="text-xs text-slate-400">공부 사진 올리기</span>
+                    </div>
+                </div>
+
+                <div class="flex gap-2">
+                    <button onclick="closeUploadModal()" class="flex-1 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold py-2.5 px-4 rounded-xl text-xs">취소</button>
+                    <button onclick="submitAttendance()" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 px-4 rounded-xl text-xs flex items-center justify-center gap-1">
+                        인증 완료 🪙 100
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- [모달] 2. 가챠 결과 (이펙트) -->
+        <div id="modal-gacha-result" class="fixed inset-0 bg-slate-950/90 backdrop-blur-md hidden z-50 flex flex-col items-center justify-center p-4">
+            <!-- 가챠 연출 대기 스크린 -->
+            <div id="gacha-animation-view" class="flex flex-col items-center space-y-6">
+                <div class="w-32 h-32 text-8xl flex items-center justify-center gacha-shake">🔮</div>
+                <h3 class="text-lg font-bold text-white animate-pulse">캡슐을 해체하는 중...</h3>
+            </div>
+
+            <!-- 결과 스크린 (처음에 숨김) -->
+            <div id="gacha-result-view" class="hidden flex flex-col items-center space-y-6 w-full max-w-[340px]">
+                <div class="text-center">
+                    <span id="result-rarity-badge" class="px-3 py-1 rounded-full text-xs font-black tracking-widest uppercase">SSR</span>
+                    <h3 id="result-card-name" class="text-xl font-bold text-white mt-2">레어 캐릭터 카드</h3>
+                </div>
+
+                <!-- 카드 이미지 프리뷰 -->
+                <div id="result-card-outer" class="w-60 h-80 rounded-2xl p-3 flex flex-col justify-between border shadow-2xl relative overflow-hidden transition-all duration-700 transform scale-90 opacity-0">
+                    <div class="flex justify-between items-center text-xs">
+                        <span id="result-card-id" class="text-[10px] text-slate-300/80 font-bold">#001</span>
+                        <span id="result-card-rarity" class="font-black">SSR</span>
+                    </div>
+                    
+                    <!-- 카드 중앙 이미지 -->
+                    <div class="w-full h-44 rounded-xl overflow-hidden my-2 bg-slate-950/50">
+                        <img id="result-card-img" src="" alt="Card Item" class="w-full h-full object-cover">
+                    </div>
+
+                    <div class="text-center mt-1">
+                        <h4 id="result-card-character" class="font-extrabold text-sm text-slate-100">치이카와</h4>
+                        <p id="result-card-desc" class="text-[10px] text-slate-300/90 mt-1 italic">"오늘 하루도 훌륭히 이겨냈다!"</p>
+                    </div>
+                </div>
+
+                <button onclick="closeGachaResult()" class="w-full bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white font-bold py-3 rounded-xl shadow-lg transition-all text-xs">도감으로 가기</button>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- 스크립트 작성 -->
+    <script>
+        // --- 1. 더미 데이터 및 카드 정의 ---
+        const CARDS_DATABASE = [
+            { id: "c_001", name: "치이카와 (공부 시작!)", rarity: "N", character: "치이카와", img: "https://images.unsplash.com/photo-1541829019-25f2b3b827f3?w=400&q=80", desc: "책상 앞에 앉은 것만으로도 50% 성공이야!" },
+            { id: "c_002", name: "하치와레 (사전 펼치기)", rarity: "N", character: "하치와레", img: "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=400&q=80", desc: "이 단어는 무슨 뜻일까? 두근두근해!" },
+            { id: "c_003", name: "우사기 (마구 끄적이기)", rarity: "N", character: "우사기", img: "https://images.unsplash.com/photo-1513542789411-b6a5d4f31634?w=400&q=80", desc: "야하-! 공부 따위 간단하지!" },
+            
+            { id: "c_004", name: "치이카와 (단어 외우기)", rarity: "R", character: "치이카와", img: "https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?w=400&q=80", desc: "아, 기억이 안 나... 조금만 더 하면 될 텐데!" },
+            { id: "c_005", name: "하치와레 (필기 노트)", rarity: "R", character: "하치와레", img: "https://images.unsplash.com/photo-1517842645767-c639042777db?w=400&q=80", desc: "열심히 요약해 봤어. 예쁘게 정리되면 기분 좋아!" },
+            { id: "c_006", name: "우사기 (기습 퀴즈)", rarity: "R", character: "우사기", img: "https://images.unsplash.com/photo-1506784983877-45594efa4cbe?w=400&q=80", desc: "하앗! 이건 무슨 뜻이게? 맞춰봐!" },
+            
+            { id: "c_007", name: "치이카와 (도서관의 휴식)", rarity: "SR", character: "치이카와", img: "https://images.unsplash.com/photo-1521587760476-6c12a4b040da?w=400&q=80", desc: "잠깐 5분만 눈을 붙였다가 해야지..." },
+            { id: "c_008", name: "하치와레 (회화 연습)", rarity: "SR", character: "하치와레", img: "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=400&q=80", desc: "코니치와! 발음이 조금 이상해도 전해질 거야!" },
+            { id: "c_009", name: "우사기 (기타 연주 챈트)", rarity: "SR", character: "우사기", img: "https://images.unsplash.com/photo-1510915228340-29c85a43dcfe?w=400&q=80", desc: "우라라라랏-! 리듬을 타면서 한자 외우기!" },
+            
+            { id: "c_010", name: "치이카와 (도쿄 타워 정복)", rarity: "SSR", character: "치이카와", img: "https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?w=400&q=80", desc: "나 일본 여행 가서 드디어 주문에 성공했어!" },
+            { id: "c_011", name: "하치와레 (유창한 프리토킹)", rarity: "SSR", character: "하치와레", img: "https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=400&q=80", desc: "네 생각도 일본어로 멋지게 대답할 수 있게 되었어!" },
+            { id: "c_012", name: "우사기 (전설의 1급 합격)", rarity: "SSR", character: "우사기", img: "https://images.unsplash.com/photo-1523240795612-9a054b0db644?w=400&q=80", desc: "프로 합격러 등극! 다들 내 기운을 받아라, 얏하-!" }
+        ];
+
+        const DIALOGUES = {
+            cheering: [
+                "5분만 공부해도 괜찮아! 조금이라도 하는 게 중요해.",
+                "하루 한 단어도 큰 성장이야. 오늘의 넌 대단해!",
+                "자주 올수록 가챠 코인이 더 빠르게 모인다구?",
+                "지금 공부하러 온 거야? 최고야, 멋져!"
+            ],
+            nagging: [
+                "어제 안 오면 내일의 내가 힘들어진다고 했지? 축하해, 오늘의 너야!",
+                "지금 인스타 릴스나 쇼츠 볼 때가 아닐 텐데? 얼른 한 글자라도 적어!",
+                "출석 스트릭 깨지면 복구하는 데 무려 🪙 500코인이다? 조심해!",
+                "설마 오늘도 그냥 자려는 건 아니지? 5분만 딱 하자."
+            ]
+        };
+
+        const MISSION_WORDS = [
+            { jp: "勉強 (べんきょう)", kr: "공부" },
+            { jp: "習慣 (しゅうかん)", kr: "습관" },
+            { jp: "友達 (ともだち)", kr: "친구" },
+            { jp: "桜 (さくら)", kr: "벚꽃" },
+            { jp: "未来 (みらい)", kr: "미래" },
+            { jp: "日本語 (にほんご)", kr: "일본어" }
+        ];
+
+        // --- 2. 상태(State) 관리 ---
+        let state = {
+            user: {
+                coins: 300,
+                streak: 0,
+                lastAttendanceDate: null,
+                pityCount: 0,
+                restoredToday: false
+            },
+            attendance: {}, // YYYY-MM-DD: { status, missionWord, photo }
+            collection: {}  // c_001: count
+        };
+
+        let selectedPhotoData = null;
+        let currentYear = 2026;
+        let currentMonth = 5; // 6월 (0-indexed)
+
+        // --- 3. 초기화 로직 ---
+        window.addEventListener('DOMContentLoaded', () => {
+            loadFromLocalStorage();
+            initializeIcons();
+            
+            // 오늘 날짜 및 출석 여부 분석
+            checkStreakBreak();
+            setupDailyMission();
+            updateUI();
+            
+            // 메인 탭 띄우기
+            switchTab('home');
+        });
+
+        function initializeIcons() {
+            lucide.createIcons();
+        }
+
+        // 로컬스토리지 저장 및 호출
+        function saveToLocalStorage() {
+            localStorage.setItem('ganbare_state', JSON.stringify(state));
+        }
+
+        function loadFromLocalStorage() {
+            const data = localStorage.getItem('ganbare_state');
+            if (data) {
+                state = JSON.parse(data);
+            } else {
+                // 초기 카드 컬렉션 세팅
+                CARDS_DATABASE.forEach(card => {
+                    state.collection[card.id] = 0;
+                });
+                saveToLocalStorage();
+            }
+        }
+
+        function getTodayString() {
+            const now = new Date();
+            const yyyy = now.getFullYear();
+            const mm = String(now.getMonth() + 1).padStart(2, '0');
+            const dd = String(now.getDate()).padStart(2, '0');
+            return `${yyyy}-${mm}-${dd}`;
+        }
+
+        function getYesterdayString() {
+            const now = new Date();
+            now.setDate(now.getDate() - 1);
+            const yyyy = now.getFullYear();
+            const mm = String(now.getMonth() + 1).padStart(2, '0');
+            const dd = String(now.getDate()).padStart(2, '0');
+            return `${yyyy}-${mm}-${dd}`;
+        }
+
+        // 스트릭 초기화 체크
+        function checkStreakBreak() {
+            const today = getTodayString();
+            const yesterday = getYesterdayString();
+            
+            if (state.user.lastAttendanceDate) {
+                const last = state.user.lastAttendanceDate;
+                if (last !== today && last !== yesterday) {
+                    // 출석 기록이 깨짐
+                    if (state.user.streak > 0) {
+                        // 복구 기회 제공 배너 노출
+                        document.getElementById('restore-banner').classList.remove('hidden');
+                    }
+                }
+            }
+        }
+
+        // 오늘의 미션 세팅
+        function setupDailyMission() {
+            const today = getTodayString();
+            // 미션 단어는 날짜를 해시하여 매일 다르게 생성
+            const hash = today.split('-').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+            const wordObj = MISSION_WORDS[hash % MISSION_WORDS.length];
+            
+            document.getElementById('mission-word-jp').innerText = wordObj.jp;
+            document.getElementById('mission-word-kr').innerText = wordObj.kr;
+            document.getElementById('modal-mission-word').innerText = wordObj.jp;
+
+            // 말풍선 대사 설정 (오늘 공부 안 했으면 쓴소리 확률 업, 했으면 응원 확률 업)
+            const isCompleted = state.attendance[today]?.status === 'completed';
+            let dialogs = [];
+            if (isCompleted) {
+                dialogs = DIALOGUES.cheering;
+            } else {
+                // 아직 미달성인 경우 쓴소리 비율 70%
+                dialogs = Math.random() < 0.7 ? DIALOGUES.nagging : DIALOGUES.cheering;
+            }
+            const randomMsg = dialogs[Math.floor(Math.random() * dialogs.length)];
+            document.getElementById('character-dialogue').innerText = randomMsg;
+        }
+
+        // --- 4. UI 렌더링 동기화 ---
+        function updateUI() {
+            // 헤더 정보
+            document.getElementById('header-coins').innerText = state.user.coins;
+            
+            // 메인 탭 정보
+            document.getElementById('streak-count').innerText = state.user.streak;
+            document.getElementById('pity-text').innerText = `${state.user.pityCount}/30`;
+            document.getElementById('pity-bar').style.width = `${(state.user.pityCount / 30) * 100}%`;
+            
+            // 뽑기 탭 게이지 정보
+            document.getElementById('gacha-pity-text').innerText = state.user.pityCount;
+
+            // 공부 인증 상태
+            const today = getTodayString();
+            const actionArea = document.getElementById('attendance-action-area');
+            if (state.attendance[today]?.status === 'completed') {
+                actionArea.innerHTML = `
+                    <div class="w-full bg-emerald-950/40 border border-emerald-500/30 text-emerald-400 font-bold py-3.5 px-4 rounded-xl text-center flex items-center justify-center gap-2">
+                        <i data-lucide="check-circle-2" class="w-5 h-5"></i>
+                        오늘 공부 인증 완료! (+100코인 획득)
+                    </div>
+                `;
+            } else {
+                actionArea.innerHTML = `
+                    <button onclick="openUploadModal()" class="w-full bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white font-bold py-3 px-4 rounded-xl shadow-lg shadow-indigo-500/20 flex items-center justify-center gap-2 transition-transform active:scale-98">
+                        <i data-lucide="camera" class="w-5 h-5"></i>
+                        오늘의 공부 인증하고 🪙 100 획득
+                    </button>
+                `;
+            }
+
+            // 대표 캐릭터 세팅 (도감에 있는 가장 높은 등급 카드 중 하나 매칭)
+            setRepresentCharacter();
+            
+            // 컬렉션 정보 렌더링
+            renderCollection();
+
+            // 달력 렌더링
+            renderCalendar();
+
+            initializeIcons();
+        }
+
+        // 대표 캐릭터 세팅
+        function setRepresentCharacter() {
+            const unlockedList = CARDS_DATABASE.filter(card => state.collection[card.id] > 0);
+            if (unlockedList.length > 0) {
+                // 등급 정렬 (SSR -> SR -> R -> N)
+                const priority = { "SSR": 4, "SR": 3, "R": 2, "N": 1 };
+                unlockedList.sort((a, b) => priority[b.rarity] - priority[a.rarity]);
+                
+                const topCard = unlockedList[0];
+                document.getElementById('home-character-img').src = topCard.img;
+                document.getElementById('badge-rarity').innerText = topCard.rarity;
+                document.getElementById('home-character-name').innerText = `${topCard.character} | ${topCard.name}`;
+            } else {
+                // 기본 카드 세팅
+                document.getElementById('home-character-img').src = "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=400&q=80";
+                document.getElementById('badge-rarity').innerText = "SSR";
+                document.getElementById('home-character-name').innerText = "기본 메이트 (공부하고 뽑기로 획득 가능!)";
+            }
+        }
+
+        // --- 5. 출석 인증 & 복구 기능 ---
+        function openUploadModal() {
+            document.getElementById('modal-upload').classList.remove('hidden');
+        }
+
+        function closeUploadModal() {
+            document.getElementById('modal-upload').classList.add('hidden');
+            selectedPhotoData = null;
+            document.getElementById('upload-preview-container').innerHTML = `
+                <i data-lucide="upload" class="w-8 h-8 text-slate-400"></i>
+                <span class="text-xs text-slate-400">공부 사진 올리기</span>
+            `;
+            initializeIcons();
+        }
+
+        function handlePhotoSelect(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    selectedPhotoData = e.target.result;
+                    document.getElementById('upload-preview-container').innerHTML = `
+                        <img src="${selectedPhotoData}" class="max-h-24 rounded-lg object-cover shadow-md">
+                        <span class="text-xs text-indigo-400 font-bold block mt-1">사진 등록됨</span>
+                    `;
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function submitAttendance() {
+            if (!selectedPhotoData) {
+                alert("공부한 필기나 인강 화면 사진을 등록해 주세요!");
+                return;
+            }
+
+            const today = getTodayString();
+            const yesterday = getYesterdayString();
+            
+            // 이미 오늘 인증했는지 검증
+            if (state.attendance[today]?.status === 'completed') {
+                alert("오늘은 이미 인증을 완료했습니다.");
+                closeUploadModal();
+                return;
+            }
+
+            // 스트릭 계산
+            let currentStreak = state.user.streak;
+            if (state.user.lastAttendanceDate === yesterday) {
+                currentStreak += 1;
+            } else if (state.user.lastAttendanceDate === today) {
+                // 이미 오늘 한 경우 (예외처리)
+            } else {
+                currentStreak = 1; // 스트릭 깨졌거나 첫 출석
+            }
+
+            // 연속 출석 보너스 코인 계산
+            let bonus = 0;
+            if (currentStreak === 3) bonus = 50;
+            else if (currentStreak === 7) bonus = 100;
+            else if (currentStreak === 14) bonus = 200;
+            else if (currentStreak === 30) bonus = 500;
+
+            // 상태 업데이트
+            state.user.coins += (100 + bonus);
+            state.user.streak = currentStreak;
+            state.user.lastAttendanceDate = today;
+            
+            state.attendance[today] = {
+                status: "completed",
+                missionWord: document.getElementById('mission-word-jp').innerText,
+                photo: selectedPhotoData
+            };
+
+            // 복구 배너 가리기
+            document.getElementById('restore-banner').classList.add('hidden');
+
+            saveToLocalStorage();
+            updateUI();
+            closeUploadModal();
+
+            // 알림 효과
+            let alertMsg = `🎉 공부 인증 완료!\n🪙 100 코인이 적립되었습니다!`;
+            if (bonus > 0) {
+                alertMsg += `\n🔥 ${currentStreak}일 출석 스페셜 보너스! +🪙 ${bonus} 추가 획득!`;
+            }
+            alert(alertMsg);
+        }
+
+        // 출석 기록 복구
+        function restoreStreak() {
+            if (state.user.coins < 500) {
+                alert("코인이 부족합니다! (복구 비용: 🪙 500코인)");
+                return;
+            }
+
+            const yesterday = getYesterdayString();
+            
+            if (state.attendance[yesterday]) {
+                alert("어제는 이미 기록이 존재합니다.");
+                return;
+            }
+
+            // 어제 출석 강제 복구
+            state.user.coins -= 500;
+            state.attendance[yesterday] = {
+                status: "completed",
+                missionWord: "복구된 기록",
+                photo: "restored"
+            };
+
+            // 마지막 출석일을 어제로 보정해서 현재 스트릭이 이어지도록 보정
+            state.user.lastAttendanceDate = yesterday;
+            state.user.streak += 1;
+
+            document.getElementById('restore-banner').classList.add('hidden');
+            
+            saveToLocalStorage();
+            updateUI();
+            
+            alert("🪄 복구 마법! 어제의 공부 기록을 부활시키고 연속 출석 스트릭을 살려냈습니다!");
+        }
+
+        // --- 6. 가챠 연출 및 로직 ---
+        function drawGacha() {
+            if (state.user.coins < 300) {
+                alert("코인이 부족합니다! (1회 뽑기: 🪙 300코인)");
+                return;
+            }
+
+            // 코인 차감 및 천장 카운트 증가
+            state.user.coins -= 300;
+            state.user.pityCount += 1;
+
+            // 가챠 뽑기 로직 실행
+            let rarity = "N";
+            let pityTriggered = false;
+
+            if (state.user.pityCount >= 30) {
+                rarity = "SSR";
+                pityTriggered = true;
+                state.user.pityCount = 0; // 천장 리셋
+            } else {
+                const rand = Math.random() * 100;
+                if (rand < 3) {
+                    rarity = "SSR";
+                    state.user.pityCount = 0; // 뽑았으므로 리셋
+                } else if (rand < 15) {
+                    rarity = "SR";
+                } else if (rand < 50) {
+                    rarity = "R";
+                } else {
+                    rarity = "N";
+                }
+            }
+
+            // 해당 등급의 카드 중 무작위 추첨
+            const candidates = CARDS_DATABASE.filter(card => card.rarity === rarity);
+            const rolledCard = candidates[Math.floor(Math.random() * candidates.length)];
+
+            // 도감 저장
+            state.collection[rolledCard.id] = (state.collection[rolledCard.id] || 0) + 1;
+
+            saveToLocalStorage();
+            updateUI();
+
+            // 가챠 연출 모달 팝업
+            showGachaAnimation(rolledCard, pityTriggered);
+        }
+
+        function showGachaAnimation(card, pityTriggered) {
+            const modal = document.getElementById('modal-gacha-result');
+            const animView = document.getElementById('gacha-animation-view');
+            const resultView = document.getElementById('gacha-result-view');
+            const cardOuter = document.getElementById('result-card-outer');
+
+            modal.classList.remove('hidden');
+            animView.classList.remove('hidden');
+            resultView.classList.add('hidden');
+            cardOuter.className = "w-60 h-80 rounded-2xl p-3 flex flex-col justify-between border shadow-2xl relative overflow-hidden transition-all duration-700 transform scale-90 opacity-0";
+
+            // 1.5초 후 획득 정보 노출
+            setTimeout(() => {
+                animView.classList.add('hidden');
+                resultView.classList.remove('hidden');
+
+                // 결과 카드 상세 셋업
+                document.getElementById('result-rarity-badge').innerText = card.rarity + (pityTriggered ? " (천장확정)" : "");
+                
+                // 등급에 따른 배지 스타일링
+                const badge = document.getElementById('result-rarity-badge');
+                if (card.rarity === 'SSR') {
+                    badge.className = "px-3 py-1 rounded-full text-xs font-black tracking-widest uppercase bg-amber-500 text-slate-950";
+                    cardOuter.classList.add('rarity-ssr');
+                } else if (card.rarity === 'SR') {
+                    badge.className = "px-3 py-1 rounded-full text-xs font-black tracking-widest uppercase bg-purple-500 text-white";
+                    cardOuter.classList.add('rarity-sr');
+                } else if (card.rarity === 'R') {
+                    badge.className = "px-3 py-1 rounded-full text-xs font-black tracking-widest uppercase bg-blue-500 text-white";
+                    cardOuter.classList.add('bg-slate-900', 'border-blue-500/50');
+                } else {
+                    badge.className = "px-3 py-1 rounded-full text-xs font-black tracking-widest uppercase bg-slate-600 text-white";
+                    cardOuter.classList.add('bg-slate-900', 'border-white/10');
+                }
+
+                document.getElementById('result-card-name').innerText = card.name;
+                document.getElementById('result-card-id').innerText = card.id.toUpperCase();
+                document.getElementById('result-card-rarity').innerText = card.rarity;
+                document.getElementById('result-card-img').src = card.img;
+                document.getElementById('result-card-character').innerText = card.character;
+                document.getElementById('result-card-desc').innerText = `"${card.desc}"`;
+
+                // 부드럽게 등장 애니메이션 적용
+                setTimeout(() => {
+                    cardOuter.classList.remove('scale-90', 'opacity-0');
+                    cardOuter.classList.add('scale-100', 'opacity-100');
+                }, 100);
+
+            }, 1500);
+        }
+
+        function closeGachaResult() {
+            document.getElementById('modal-gacha-result').classList.add('hidden');
+            switchTab('collection');
+        }
+
+        // --- 7. 도감 기능 ---
+        let currentFilter = 'all';
+        function filterCollection(rarity) {
+            currentFilter = rarity;
+            
+            // 필터 버튼 하이라이트 제어
+            const filters = ['all', 'ssr', 'sr', 'r', 'n'];
+            filters.forEach(f => {
+                const btn = document.getElementById(`filter-${f}`);
+                if (f === rarity.toLowerCase()) {
+                    btn.className = "flex-1 py-1.5 rounded-lg text-center font-semibold bg-indigo-600 text-white";
+                } else {
+                    btn.className = "flex-1 py-1.5 rounded-lg text-center font-semibold text-slate-400 hover:text-white transition-colors";
+                }
+            });
+
+            renderCollection();
+        }
+
+        function renderCollection() {
+            const grid = document.getElementById('collection-grid');
+            grid.innerHTML = '';
+
+            const filteredCards = CARDS_DATABASE.filter(card => {
+                if (currentFilter === 'all') return true;
+                return card.rarity === currentFilter;
+            });
+
+            let unlockedCount = 0;
+            CARDS_DATABASE.forEach(c => {
+                if (state.collection[c.id] > 0) unlockedCount++;
+            });
+
+            const totalCount = CARDS_DATABASE.length;
+            const rate = Math.round((unlockedCount / totalCount) * 100);
+            
+            document.getElementById('collection-rate').innerText = `${rate}%`;
+            document.getElementById('collection-count').innerText = unlockedCount;
+
+            filteredCards.forEach(card => {
+                const count = state.collection[card.id] || 0;
+                const isUnlocked = count > 0;
+                
+                const cardEl = document.createElement('div');
+                cardEl.className = `relative aspect-[3/4] rounded-xl border p-2 flex flex-col justify-between overflow-hidden group transition-all duration-300 ${
+                    isUnlocked 
+                    ? (card.rarity === 'SSR' ? 'rarity-ssr' : card.rarity === 'SR' ? 'rarity-sr' : 'bg-slate-900 border-indigo-500/20') 
+                    : 'bg-slate-950/60 border-white/5 opacity-40'
+                }`;
+
+                if (isUnlocked) {
+                    cardEl.innerHTML = `
+                        <div class="flex justify-between items-center text-[8px] font-bold text-slate-300">
+                            <span>${card.rarity}</span>
+                            <span>x${count}</span>
+                        </div>
+                        <img src="${card.img}" class="w-full h-16 object-cover rounded-lg my-1">
+                        <div class="text-center">
+                            <p class="text-[9px] font-bold text-white truncate">${card.character}</p>
+                            <p class="text-[7px] text-slate-400 truncate">${card.name}</p>
+                        </div>
+                    `;
+                } else {
+                    cardEl.innerHTML = `
+                        <div class="flex justify-between items-center text-[8px] font-bold text-slate-600">
+                            <span>${card.rarity}</span>
+                            <span>?</span>
+                        </div>
+                        <div class="w-full h-16 flex items-center justify-center bg-slate-900/50 rounded-lg my-1">
+                            <i data-lucide="lock" class="w-4 h-4 text-slate-700"></i>
+                        </div>
+                        <div class="text-center">
+                            <p class="text-[9px] font-bold text-slate-600">???</p>
+                            <p class="text-[7px] text-slate-700">미획득</p>
+                        </div>
+                    `;
+                }
+
+                grid.appendChild(cardEl);
+            });
+            initializeIcons();
+        }
+
+        // --- 8. 달력 기능 ---
+        function renderCalendar() {
+            const daysGrid = document.getElementById('calendar-days');
+            daysGrid.innerHTML = '';
+
+            const months = ["1월", "2월", "3월", "4월", "5월", "6월", "7월", "8월", "9월", "10월", "11월", "12월"];
+            document.getElementById('calendar-title').innerText = `${currentYear}년 ${months[currentMonth]}`;
+
+            // 이 달의 첫째 날과 마지막 날 계산
+            const firstDayIndex = new Date(currentYear, currentMonth, 1).getDay();
+            const lastDate = new Date(currentYear, currentMonth + 1, 0).getDate();
+
+            // 빈 날짜 채우기 (요일 맞춤)
+            for (let i = 0; i < firstDayIndex; i++) {
+                const emptyCell = document.createElement('div');
+                daysGrid.appendChild(emptyCell);
+            }
+
+            let completedCount = 0;
+
+            for (let day = 1; day <= lastDate; day++) {
+                const dateStr = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                const attRecord = state.attendance[dateStr];
+                
+                const cell = document.createElement('div');
+                cell.className = "aspect-square rounded-lg flex flex-col items-center justify-center text-xs font-semibold relative transition-all duration-300";
+                
+                // 날짜 텍스트
+                const dateNum = document.createElement('span');
+                dateNum.innerText = day;
+                cell.appendChild(dateNum);
+
+                if (attRecord?.status === 'completed') {
+                    completedCount++;
+                    cell.classList.add('bg-emerald-950/80', 'text-emerald-400', 'border', 'border-emerald-500/30');
+                    // 초록불 마크
+                    const dot = document.createElement('span');
+                    dot.className = "w-1 h-1 bg-emerald-400 rounded-full absolute bottom-1";
+                    cell.appendChild(dot);
+                } else {
+                    cell.classList.add('bg-slate-800/30', 'text-slate-500', 'border', 'border-white/5');
+                }
+
+                daysGrid.appendChild(cell);
+            }
+
+            document.getElementById('stat-completed').innerText = `${completedCount}일`;
+            document.getElementById('stat-best-streak').innerText = `${state.user.streak}일`;
+        }
+
+        function prevMonth() {
+            currentMonth--;
+            if (currentMonth < 0) {
+                currentMonth = 11;
+                currentYear--;
+            }
+            renderCalendar();
+        }
+
+        function nextMonth() {
+            currentMonth++;
+            if (currentMonth > 11) {
+                currentMonth = 0;
+                currentYear++;
+            }
+            renderCalendar();
+        }
+
+        // --- 9. 네비게이션 및 탭 스위칭 ---
+        function switchTab(tabId) {
+            // 모든 탭 컨텐츠 숨기기
+            document.querySelectorAll('.tab-pane').forEach(el => el.classList.add('hidden'));
+            // 대상 탭 보이기
+            document.getElementById(`tab-${tabId}`).classList.remove('hidden');
+
+            // 네비게이션 아이콘 활성화 스타일 정리
+            const tabs = ['home', 'gacha', 'collection', 'calendar'];
+            tabs.forEach(t => {
+                const navBtn = document.getElementById(`nav-${t}`);
+                if (t === tabId) {
+                    navBtn.className = "flex flex-col items-center justify-center flex-1 h-full text-indigo-500 font-semibold transition-all";
+                } else {
+                    navBtn.className = "flex flex-col items-center justify-center flex-1 h-full text-slate-500 font-medium hover:text-slate-300 transition-all";
+                }
+            });
+        }
+    </script>
+</body>
+</html>
